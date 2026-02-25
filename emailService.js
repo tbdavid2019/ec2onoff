@@ -33,7 +33,7 @@ export const sendOtp = async (toEmail, code) => {
 
 
     const mailOptions = {
-        from: `"EC2 Controller" <${process.env.SMTP_USER}>`,
+        from: `"EC2 Controller by AICreate360 (David888)" <${process.env.SMTP_USER}>`,
         to: toEmail,
         subject: "Your Login Verification Code",
         html: `
