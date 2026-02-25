@@ -29,7 +29,7 @@
                     <div class="logo-circle">
                         <i class="fa-solid fa-server"></i>
                     </div>
-                    <h2>EC2 Controller </h2>
+                    <h2>EC2 Controller by AICreate360 (David888) </h2>
                     <p class="subtitle">Secure access portal</p>
                 </div>
 
@@ -72,21 +72,10 @@
                     <button class="btn secondary outline small" id="btn-logout">Logout</button>
                 </div>
 
-                <div class="status-card">
-                    <div class="status-indicator">
-                        <div class="pulse-ring" id="status-ring"></div>
-                        <div class="status-dot" id="status-dot"></div>
-                    </div>
-                    <div class="status-details">
-                        <h3>Status</h3>
-                        <p class="status-text target-instance" id="instance-status">Checking...</p>
-                        <p class="instance-id">i-0e060fb05058b7ef2 (Tokyo)</p>
-                    </div>
-                    <div class="action-area">
-                        <button class="toggle-btn disabled" id="btn-toggle">
-                            <i class="fa-solid fa-power-off"></i>
-                            <span id="toggle-text">Loading</span>
-                        </button>
+                <div id="instances-container">
+                    <!-- Dynamic instances will be rendered here via JS -->
+                    <div class="text-center loading-text py-4">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Loading instances...
                     </div>
                 </div>
 
@@ -97,6 +86,7 @@
                             <thead>
                                 <tr>
                                     <th>Action</th>
+                                    <th>Instance</th>
                                     <th>Time</th>
                                     <th>User</th>
                                     <th>Uptime</th>
@@ -104,7 +94,7 @@
                             </thead>
                             <tbody id="logs-body">
                                 <tr>
-                                    <td colspan="4" class="text-center loading-text">Loading logs...</td>
+                                    <td colspan="5" class="text-center loading-text">Loading logs...</td>
                                 </tr>
                             </tbody>
                         </table>

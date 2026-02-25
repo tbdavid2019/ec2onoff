@@ -142,3 +142,11 @@ A lightweight, secure, and modern web application to allow non-technical team me
 
 4. **開啟網頁**
    打開瀏覽器並前往 `http://localhost:3000` (如果部署在雲端則是 `http://<您的IP>:3000`) 即可開始使用。
+
+
+```
+# 1. 停止並刪除舊的容器 (不會影響檔案與資料庫)
+docker rm -f ec2-controller-app
+# 2. 用同一個 Image 與新的 .env 設定，重新啟動容器
+docker run -d -p 3000:3000 --env-file .env -v $(pwd)/logs:/app/logs --name ec2-controller-app ec2-controller
+```
