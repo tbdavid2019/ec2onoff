@@ -39,7 +39,15 @@ const sessionStore = new Map();
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static("public"));
+app.use(express.static("public", {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('.css')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
+}));
 
 // Helper: Check if email is whitelisted
 const isWhitelisted = (email) => {
