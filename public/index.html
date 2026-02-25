@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC2 Controller Panel</title>
+    <!-- Add Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message">Message here</span>
+    </div>
+
+    <div class="container">
+        <!-- Main Card Wrapper -->
+        <div class="card">
+
+            <!-- ====== Login Section ====== -->
+            <div id="login-section" class="section active">
+                <div class="header">
+                    <div class="logo-circle">
+                        <i class="fa-solid fa-server"></i>
+                    </div>
+                    <h2>EC2 Controller</h2>
+                    <p class="subtitle">Secure access portal</p>
+                </div>
+
+                <div class="form-group" id="email-step">
+                    <label for="email">Work Email</label>
+                    <div class="input-wrapper">
+                        <i class="fa-regular fa-envelope icon"></i>
+                        <input type="email" id="email" placeholder="name@aicreate360.com" autocomplete="email">
+                    </div>
+                    <button class="btn primary full-width" id="btn-request-otp">
+                        <span class="btn-text">Send Login Code</span>
+                        <i class="fa-solid fa-arrow-right btn-icon"></i>
+                    </button>
+                </div>
+
+                <div class="form-group hidden" id="otp-step">
+                    <button class="btn-text-only mb-4" id="btn-back-to-email">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </button>
+                    <label for="otp">Verification Code</label>
+                    <p class="help-text">We sent a 6-digit code to <strong id="display-email"></strong></p>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-key icon"></i>
+                        <input type="text" id="otp" placeholder="123456" maxlength="6" autocomplete="one-time-code">
+                    </div>
+                    <button class="btn primary full-width" id="btn-verify-otp">
+                        <span class="btn-text">Verify & Login</span>
+                        <i class="fa-solid fa-check btn-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ====== Dashboard Section ====== -->
+            <div id="dashboard-section" class="section">
+                <div class="dashboard-header">
+                    <div>
+                        <h2>Instance Control</h2>
+                        <p class="user-greeting">Logged in as <span id="current-user"></span></p>
+                    </div>
+                    <button class="btn secondary outline small" id="btn-logout">Logout</button>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-indicator">
+                        <div class="pulse-ring" id="status-ring"></div>
+                        <div class="status-dot" id="status-dot"></div>
+                    </div>
+                    <div class="status-details">
+                        <h3>Status</h3>
+                        <p class="status-text target-instance" id="instance-status">Checking...</p>
+                        <p class="instance-id">i-0e060fb05058b7ef2 (Tokyo)</p>
+                    </div>
+                    <div class="action-area">
+                        <button class="toggle-btn disabled" id="btn-toggle">
+                            <i class="fa-solid fa-power-off"></i>
+                            <span id="toggle-text">Loading</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="logs-container">
+                    <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h3>
+                    <div class="table-wrapper">
+                        <table id="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Uptime</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-body">
+                                <tr>
+                                    <td colspan="4" class="text-center loading-text">Loading logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- /Card -->
+    </div> <!-- /Container -->
+
+    <script src="app.js"></script>
+</body>
+
+</html>
