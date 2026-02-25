@@ -50,7 +50,7 @@ A lightweight, secure, and modern web application to allow non-technical team me
    AWS_ACCESS_KEY_ID=AKIA...
    AWS_SECRET_ACCESS_KEY=...
    ```
-   *(Note: You will also need to update the `REGION` and `INSTANCE_ID` hardcoded in `awsService.js` to match your target EC2 instance.)*
+   *(Note: You will also need to update the `REGION` and `INSTANCE_ID` hardcoded in `awsService.js` to match your target EC2 instance. For instructions on creating the correct IAM User, see [awscli.md](./awscli.md).)*
 
 3. **Build & Run with Docker**
    ```bash
@@ -121,7 +121,7 @@ A lightweight, secure, and modern web application to allow non-technical team me
    AWS_ACCESS_KEY_ID=AKIA...
    AWS_SECRET_ACCESS_KEY=...
    ```
-   *(請注意：您還需要手動將 `awsService.js` 檔案中的 `REGION` 和 `INSTANCE_ID` 改為您自己要控制的 EC2 區域與 ID。)*
+   *(請注意：您還需要手動將 `awsService.js` 檔案中的 `REGION` 和 `INSTANCE_ID` 改為您自己要控制的 EC2 區域與 ID。如果您不知道如何建立這組權限最小化的金鑰，請參考 [awscli.md](./awscli.md) 內的圖文教學。)*
 
 3. **建置與啟動 Docker 容器**
    ```bash
