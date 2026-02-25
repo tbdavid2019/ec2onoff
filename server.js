@@ -17,6 +17,19 @@ const WHITELIST_EMAILS = (process.env.WHITELIST_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase());
 
+// EC2 Instances Config
+let configuredInstances = [];
+try {
+    let rawJson = process.env.EC2_INSTANCES || "[]";
+    // Strip surrounding single quotes if docker env-file preserved them
+    if (rawJson.startsWith("'") && rawJson.endsWith("'")) {
+        rawJson = rawJson.slice(1, -1);
+    }
+    configuredInstances = JSON.parse(rawJson);
+} catch (err) {
+    console.error("Failed to parse EC2_INSTANCES from .env:", err);
+}
+
 // In-memory OTP store (email -> { code, expiresAt })
 const otpStore = new Map();
 
@@ -139,32 +152,45 @@ app.post("/api/logout", (req, res) => {
     res.json({ message: "Logged out" });
 });
 
-// 4. Get EC2 Status
+// 4. Get Configured Instances
+app.get("/api/instances", requireAuth, (req, res) => {
+    // Only send non-sensitive config data
+    res.json(configuredInstances.map(inst => ({ id: inst.id, name: inst.name, alias: inst.alias || "" })));
+});
+
+// 5. Get EC2 Status for all configured instances
 app.get("/api/status", requireAuth, async (req, res) => {
     try {
-        const status = await checkStatus();
-        res.json(status);
+        const statuses = await Promise.all(
+            configuredInstances.map(inst => checkStatus(inst.region, inst.id))
+        );
+        res.json(statuses);
     } catch (err) {
         console.error("Status Check Error:", err);
-        res.status(500).json({ error: "Failed to check instance status" });
+        res.status(500).json({ error: "Failed to check instance statuses" });
     }
 });
 
-// 5. Toggle EC2 (Start/Stop)
+// 6. Toggle EC2 (Start/Stop)
 app.post("/api/toggle", requireAuth, async (req, res) => {
     try {
-        const { action } = req.body; // 'start' or 'stop'
+        const { action, instanceId } = req.body;
         if (action !== "start" && action !== "stop") {
             return res.status(400).json({ error: "Invalid action" });
+        }
+
+        const instanceConfig = configuredInstances.find(i => i.id === instanceId);
+        if (!instanceConfig) {
+            return res.status(404).json({ error: "Instance not found in configuration" });
         }
 
         const email = req.user.email;
         let result;
 
         if (action === "start") {
-            result = await startInstance(email);
+            result = await startInstance(email, instanceConfig.region, instanceId);
         } else {
-            result = await stopInstance(email);
+            result = await stopInstance(email, instanceConfig.region, instanceId);
         }
 
         res.json(result);

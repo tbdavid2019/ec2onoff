@@ -17,16 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnToggle = document.getElementById('btn-toggle');
 
     const currentUserSpan = document.getElementById('current-user');
-    const instanceStatus = document.getElementById('instance-status');
-    const statusCard = document.querySelector('.status-card');
-    const toggleText = document.getElementById('toggle-text');
-    const toggleIcon = btnToggle.querySelector('i');
-
+    const instancesContainer = document.getElementById('instances-container');
     const logsBody = document.getElementById('logs-body');
     const toastEl = document.getElementById('toast');
     const toastMsg = document.getElementById('toast-message');
 
-    let currentStatus = 'unknown'; // running, stopped, pending, stopping
+    let configuredInstances = [];
+    let instancesState = {}; // map of id -> status
     let pollInterval = null;
 
     // --- Helpers ---
@@ -142,69 +139,133 @@ document.addEventListener('DOMContentLoaded', () => {
             await apiCall('/api/logout', 'POST');
             handleLogoutLocal();
             showToast('Logged out');
+            instancesContainer.innerHTML = '';
         } catch (err) {
             showToast('Error logging out', 'error');
         }
     };
 
     // --- Dashboard Logic ---
-    const showDashboard = () => {
+    const showDashboard = async () => {
         loginSection.classList.remove('active');
         dashboardSection.classList.add('active');
+
+        await fetchInstancesConfig();
         fetchStatus();
         fetchLogs();
+
         // Poll status every 10 seconds
         if (pollInterval) clearInterval(pollInterval);
         pollInterval = setInterval(fetchStatus, 10000);
     };
 
-    const updateStatusUI = (status) => {
-        currentStatus = status;
-        instanceStatus.textContent = status;
-
-        statusCard.className = `status-card ${status}`;
-        btnToggle.className = 'toggle-btn'; // reset
-
-        if (status === 'running') {
-            btnToggle.classList.add('btn-turn-off');
-            btnToggle.disabled = false;
-            toggleIcon.className = 'fa-solid fa-power-off';
-            toggleText.textContent = 'STOP';
-        } else if (status === 'stopped') {
-            btnToggle.classList.add('btn-turn-on');
-            btnToggle.disabled = false;
-            toggleIcon.className = 'fa-solid fa-play';
-            toggleText.textContent = 'START';
-        } else {
-            // pending, stopping
-            btnToggle.classList.add('disabled');
-            btnToggle.disabled = true;
-            toggleIcon.className = 'fa-solid fa-circle-notch fa-spin';
-            toggleText.textContent = status === 'pending' ? 'STARTING' : 'STOPPING';
+    const fetchInstancesConfig = async () => {
+        try {
+            configuredInstances = await apiCall('/api/instances');
+            // Init state
+            configuredInstances.forEach(inst => {
+                instancesState[inst.id] = 'unknown';
+            });
+            renderInstanceCards();
+        } catch (err) {
+            console.error("Failed to fetch instance config", err);
+            instancesContainer.innerHTML = '<div class="text-center text-danger">Failed to load configuration.</div>';
         }
+    };
+
+    const renderInstanceCards = () => {
+        if (configuredInstances.length === 0) {
+            instancesContainer.innerHTML = '<div class="text-center text-muted">No instances configured.</div>';
+            return;
+        }
+
+        instancesContainer.innerHTML = configuredInstances.map(inst => {
+            const status = instancesState[inst.id] || 'unknown';
+
+            let btnClass = '';
+            let btnIcon = '';
+            let btnText = '';
+            let disabled = true;
+
+            if (status === 'running') {
+                btnClass = 'btn-turn-off';
+                btnIcon = 'fa-power-off';
+                btnText = 'STOP';
+                disabled = false;
+            } else if (status === 'stopped') {
+                btnClass = 'btn-turn-on';
+                btnIcon = 'fa-play';
+                btnText = 'START';
+                disabled = false;
+            } else {
+                btnClass = 'disabled';
+                btnIcon = 'fa-circle-notch fa-spin';
+                btnText = status === 'pending' ? 'STARTING' : (status === 'stopping' ? 'STOPPING' : 'CHECKING');
+                disabled = true;
+            }
+
+            return `
+                <div class="status-card ${status}" id="card-${inst.id}">
+                    <div class="status-indicator">
+                        <div class="pulse-ring"></div>
+                        <div class="status-dot"></div>
+                    </div>
+                    <div class="status-details">
+                        <h3 class="mb-1">${inst.name}</h3>
+                        ${inst.alias ? `<p class="text-muted text-sm mb-2" style="font-size: 0.8em; line-height: 1.2;"><b>用途:</b> ${inst.alias}</p>` : ''}
+                        <p class="status-text">${status}</p>
+                        <p class="instance-id mt-1 text-muted text-sm">${inst.id}</p>
+                    </div>
+                    <div class="action-area">
+                        <button class="toggle-btn ${btnClass}" data-id="${inst.id}" ${disabled ? 'disabled' : ''}>
+                            <i class="fa-solid ${btnIcon}"></i>
+                            <span>${btnText}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Re-attach listeners to dynamic buttons
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const instanceId = e.currentTarget.getAttribute('data-id');
+                handleToggle(instanceId);
+            });
+        });
     };
 
     const fetchStatus = async () => {
         try {
-            const data = await apiCall('/api/status');
-            updateStatusUI(data.status);
+            const statuses = await apiCall('/api/status');
+            statuses.forEach(data => {
+                if (data && data.instanceId) {
+                    instancesState[data.instanceId] = data.status;
+                }
+            });
+            renderInstanceCards();
         } catch (err) {
             console.error("Failed to fetch status");
         }
     };
 
-    const handleToggle = async () => {
+    const handleToggle = async (instanceId) => {
+        const currentStatus = instancesState[instanceId];
         if (currentStatus !== 'running' && currentStatus !== 'stopped') return;
-        if (!confirm(`Are you sure you want to ${currentStatus === 'running' ? 'STOP' : 'START'} the instance?`)) return;
+
+        const instConfig = configuredInstances.find(i => i.id === instanceId);
+        const name = instConfig ? instConfig.name : instanceId;
+
+        if (!confirm(`Are you sure you want to ${currentStatus === 'running' ? 'STOP' : 'START'} ${name}?`)) return;
 
         const action = currentStatus === 'running' ? 'stop' : 'start';
 
         // Optimistic UI update
-        btnToggle.disabled = true;
-        updateStatusUI(action === 'start' ? 'pending' : 'stopping');
+        instancesState[instanceId] = action === 'start' ? 'pending' : 'stopping';
+        renderInstanceCards();
 
         try {
-            const data = await apiCall('/api/toggle', 'POST', { action });
+            const data = await apiCall('/api/toggle', 'POST', { action, instanceId });
             showToast(data.message);
             fetchStatus(); // re-fetch to confirm
             setTimeout(fetchLogs, 2000); // refresh logs slightly after
@@ -231,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `
                     <tr>
                         <td><span class="action-badge ${actionClass}">${log.action}</span></td>
+                        <td><span class="text-muted" style="font-size: 0.85em;">${log.instance_id || 'Legacy'}</span></td>
                         <td>${time}</td>
                         <td>${log.user_email.split('@')[0]}</td>
                         <td>${uptime}</td>
@@ -239,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
         } catch (err) {
             console.error("Failed to fetch logs");
-            logsBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted text-danger">Failed to load logs.</td></tr>';
+            logsBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted text-danger">Failed to load logs.</td></tr>';
         }
     };
 
@@ -251,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
         otpStep.classList.add('hidden');
     });
     btnLogout.addEventListener('click', handleLogout);
-    btnToggle.addEventListener('click', handleToggle);
 
     emailInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleRequestOtp();
